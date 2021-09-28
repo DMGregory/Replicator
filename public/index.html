@@ -36,8 +36,8 @@
 
       const sensorSpace = new THREE.Object3D();
       let angle = Math.random() * Math.PI * 2;
-      sensorSpace.position.x = Math.sin(angle * 6);
-      sensorSpace.position.z = Math.cos(angle * 6);
+      sensorSpace.position.x = Math.sin(angle) * 3;
+      sensorSpace.position.z = Math.cos(angle) * 3;
       sensorSpace.rotation.y = angle * 180.0/Math.PI;
       
       const camera = new THREE.PerspectiveCamera(
