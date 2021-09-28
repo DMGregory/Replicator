@@ -104,6 +104,7 @@ const wss = new ws.Server({ server: server });
 
 wss.on('connection', (socket, req) => {
 	let room = url.parse(req.url).pathname.replace(/\/*$/, "").replace(/\/+/, "/")
+	if (!room) room = "default"
 	let id = newID()
 	let client = {
 		socket: socket,
@@ -122,21 +123,16 @@ wss.on('connection', (socket, req) => {
 	// enter this room
 	getRoom(client.room).clients[id] = client
 
-	socket.on('message', (msg) => {
-		//console.log(msg)
-		const s = msg.indexOf(" ")
-		if (s > 0) {
-			const cmd = msg.substr(0, s), rest = msg.substr(s+1)
-			switch(cmd) {
-				case "pose": 
-					let vals = rest.split(" ").map(Number)
-					client.shared.pos = vals.slice(0,3)
-					client.shared.quat = vals.slice(3, 7)
-					break;
-				case "user": 
-					client.shared.user = JSON.parse(rest)
-					break;
-			}
+	socket.on('message', (data) => {		
+		const msg = JSON.parse(data);
+		switch(msg.cmd) {
+			case "pose": 
+				client.shared.pos = msg.pos;
+				client.shared.quat = msg.quat;
+				break;
+			case "user": 
+				client.shared.user = msg.user;
+				break;
 		}
 	});
 
@@ -146,24 +142,29 @@ wss.on('connection', (socket, req) => {
 	});
 
 	socket.on('close', () => {
-		console.log("close", id)
-		console.log(Object.keys(clients))
-		delete clients[id]
+		//console.log("close", id)
+		//console.log(Object.keys(clients))
+		delete clients[id];		
 
 		// remove from room
-		if (client.room) delete rooms[client.room].clients[id]
+		if (client.room) { 
+			console.log(`client ${id} removed from room`)
+			delete rooms[client.room].clients[id]
+		} else {
+			console.log(`client ${id} has no room`)
+		}
 
 		console.log(`client ${id} left`)
 	});
 
-	socket.send("handshake " + id)
+	socket.send(JSON.stringify({cmd: "handshake", id: id}));
 });
 
 setInterval(function() {
 	for (let roomid of Object.keys(rooms)) {
 		const room = rooms[roomid]
 		let clientlist = Object.values(room.clients)
-		let shared = "others " + JSON.stringify(clientlist.map(o=>o.shared));
+		let shared = JSON.stringify({cmd: "others", others: clientlist.map(o=>o.shared)});
 		clientlist.forEach(c => c.socket.send(shared))
 	}
 }, 1000/30);
