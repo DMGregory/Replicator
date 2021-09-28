@@ -31,15 +31,26 @@
         return `(${v.x}, ${v.y}, ${v.z})`;
       }
 
+            // create the root of a scene graph
+            const scene = new THREE.Scene();
+
+      const sensorSpace = new THREE.Object3D();
+      let angle = Math.random() * Math.PI * 2;
+      sensorSpace.position.x = Math.sin(angle * 6);
+      sensorSpace.position.z = Math.cos(angle * 6);
+      sensorSpace.rotation.y = angle * 180.0/Math.PI;
+      
       const camera = new THREE.PerspectiveCamera(
         75,
         window.innerWidth / window.innerHeight,
         0.05,
         100
       );
-      camera.position.y = 1.5;
-      camera.position.z = 1.5;
+      sensorSpace.add(camera);
+      scene.add(sensorSpace);    
 
+      camera.position.y = 1.5;
+      camera.position.z = 0;
 
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.target.set(0, 0.75, 0);
@@ -52,8 +63,8 @@
       resize();
       window.addEventListener('resize', resize, false);
 
-      // create the root of a scene graph
-      const scene = new THREE.Scene();
+
+  
 
       const fadeColor = 0x5099c5;
       scene.background = new THREE.Color(fadeColor);
@@ -65,21 +76,9 @@
 
       // position the cube, and add it to the scene:
       cube.position.y = 1.5;
-      cube.position.z = -3.0;
+      cube.position.z = 0;
       cube.castShadow = true;
       scene.add(cube);
-
-      /*
-      const secondCube = new THREE.Mesh(geometry, material);
-      secondCube.position.y = 1.5;
-      secondCube.position.z = -2.0;
-      secondCube.position.x = 0;
-      secondCube.scale.x = 0.5;
-      secondCube.scale.y = 0.2;
-      secondCube.scale.z = 0.3;
-      secondCube.castShadow = true;
-      scene.add(secondCube);
-      */
 
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), material);
       floor.receiveShadow = true;
@@ -211,17 +210,10 @@
         const t = clock.getElapsedTime();
 
         if (renderer.xr && renderer.xr.isPresenting) {
-          mouse.set(0, 0);
-          //print(renderer.xr.getCamera());
+          mouse.set(0, 0);          
         } else {
           controls.update(dt);      
         }
-
-        /*
-        secondCube.position.copy(camera.position);
-        secondCube.position.z -= 1.5;
-        camera.getWorldQuaternion(secondCube.quaternion);
-        */
 
         raycaster.setFromCamera(mouse, camera);
         const intersects = raycaster.intersectObjects([
@@ -247,19 +239,24 @@
         // TODO: Offset by player position/rig,
         // so users aren't all overlapped in one spot.
 
+        
         let {self, others} = app.world;
-        self.pos[0] = camera.position.x;
-        self.pos[1] = camera.position.y;
-        self.pos[2] = camera.position.z;
+        let p = new THREE.Vector3();
+        camera.getWorldPosition(p);
+        self.pos[0] = p.x;
+        self.pos[1] = p.y;
+        self.pos[2] = p.z;
 
-        self.quat[0] = camera.quaternion.x;
-        self.quat[1] = camera.quaternion.y;
-        self.quat[2] = camera.quaternion.z;
-        self.quat[3] = camera.quaternion.w;
+        let q = new THREE.Quaternion();
+        camera.getWorldQuaternion(q);
+        self.quat[0] = q.x;
+        self.quat[1] = q.y;
+        self.quat[2] = q.z;
+        self.quat[3] = q.w;
 
-        let i = 0;
+        let otherCount = 0;
         others.forEach(o => {
-          i++;
+          otherCount++;
           let r = replicas[o.id];
 
           if (r === undefined) {
@@ -276,9 +273,19 @@
           
           r.head.position.set(o.pos[0], o.pos[1], o.pos[2]+2);
           r.head.quaternion.set(o.quat[0], o.quat[1], o.quat[2], o.quat[3]);
-        });        
+          r.lastUpdate = t;
+        });
 
-        print(`others: ${i}`);
+        for (let key in replicas) {
+          let r = replicas[key];
+          if (r.lastUpdate < t) {
+            console.log(`Removing replica for ${key}`, r);
+            scene.remove(r.head);
+            delete replicas[key];
+          }
+        }
+
+        print(`others: ${otherCount}`);
 
         // draw the scene:
         renderer.render(scene, camera);

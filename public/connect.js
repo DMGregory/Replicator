@@ -42,7 +42,7 @@ function connectToWorld(opt = {}) {
     };
 
     server.onerror = function (event, error) {
-      options.log('WebSocket error observed:', event, error);      
+      options.log('WebSocket error observed:', event, error);
       server.close();
       reconnect();
     };
@@ -54,15 +54,13 @@ function connectToWorld(opt = {}) {
         reconnect();
       };
       server.onmessage = (event) => {
-        let msg = JSON.parse(event.data);        
+        let msg = JSON.parse(event.data);
         switch (msg.cmd) {
           case 'handshake':
             world.self.id = msg.id;
             break;
           case 'others':
-            world.others = msg.others.filter(
-              (o) => o.id != world.self.id
-            );
+            world.others = msg.others.filter((o) => o.id != world.self.id);
             break;
           case 'reload':
             location.reload();
@@ -73,7 +71,7 @@ function connectToWorld(opt = {}) {
       };
 
       // send an update regarding our userdata:
-      server.send(JSON.stringify({cmd: 'user', user: world.self.user}));
+      server.send(JSON.stringify({ cmd: 'user', user: world.self.user }));
     };
 
     return server;
@@ -83,7 +81,13 @@ function connectToWorld(opt = {}) {
 
   setInterval(() => {
     if (server && server.readyState == 1 && world.self.id) {
-      server.send(JSON.stringify({cmd: 'pose', pos: world.self.pos, quat: world.self.quat}));
+      server.send(
+        JSON.stringify({
+          cmd: 'pose',
+          pos: world.self.pos,
+          quat: world.self.quat,
+        })
+      );
     }
   }, 1000 / 30);
 
