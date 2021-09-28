@@ -1,0 +1,39 @@
+{
+  "name": "digm5520-replicator",
+  "version": "0.3.0",
+  "description": "Replication test for DIGM5520",
+  "engines": {
+    "node": "14.x"
+  },
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "assert": "^2.0.0",
+    "ejs": "^3.1.5",
+    "express": "^4.17.1",
+    "fs": "0.0.1-security",
+    "http": "0.0.1-security",
+    "json8-patch": "^1.0.6",
+    "node": "^16.10.0",
+    "path": "^0.12.7",
+    "process": "^0.11.10",
+    "uuid": "^8.3.2",
+    "ws": "^8.2.2"
+  },
+  "devDependencies": {
+    "got": "^11.3.0",
+    "tape": "^4.7.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DMGregory/Replicator"
+  },
+  "keywords": [
+    "node",
+    "heroku",
+    "express"
+  ],
+  "license": "MIT"
+}
