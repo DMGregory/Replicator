@@ -1,4 +1,4 @@
-// Clones from https://github.com/worldmaking/nodelab/blob/main/server.js
+// Cloned from https://github.com/worldmaking/nodelab/blob/main/server.js
 
 /*
 A simple server to manage user connections within different "rooms"
@@ -101,7 +101,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 const server = http.createServer(app)
 const wss = new ws.Server({ server: server });
 
-
 wss.on('connection', (socket, req) => {
 	let room = url.parse(req.url).pathname.replace(/\/*$/, "").replace(/\/+/, "/")
 	if (!room) room = "default"
@@ -113,7 +112,7 @@ wss.on('connection', (socket, req) => {
 			id: id,
 			pos: [0, 0, 0],
 			quat: [0, 0, 0, 1],
-			user: {}
+			user: { rgb:[0,0,0] }
 		}
 	}
 	clients[id] = client
@@ -142,8 +141,6 @@ wss.on('connection', (socket, req) => {
 	});
 
 	socket.on('close', () => {
-		//console.log("close", id)
-		//console.log(Object.keys(clients))
 		delete clients[id];		
 
 		// remove from room

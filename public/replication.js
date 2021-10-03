@@ -6,18 +6,21 @@ import { XRControllerModelFactory } from "https://cdn.jsdelivr.net/npm/three@0.1
 const replicas = {};
 
 function createReplica(world, user) {
-    console.log(`creating replica for user ${user.id}`);
+    console.log(`creating replica for user ${user.id}:`, user);
 
+    let rgb = user.user.rgb;
     const r = {
-        material: new THREE.MeshLambertMaterial(user.colour)
+        material: rgb ? new THREE.MeshLambertMaterial({
+                color: new THREE.Color(`rgb(${Math.round(255 * rgb[0])}, ${Math.round(255 * rgb[1])},${Math.round(255 * rgb[2])})`)
+            }) : world.defaultMaterial
     }
     r.head = new THREE.Mesh(world.primitiveGeo.box, r.material);
     r.head.scale.set(0.2, 0.1, 0.12);
 
     const ball = new THREE.Mesh(world.primitiveGeo.sphere, r.material);    
     r.head.add (ball);
-    ball.scale.set(1.2, 4, 2);
-    ball.position.set(0, -0.55, 0.75);
+    ball.scale.set(1.2, 3.5, 2);
+    ball.position.set(0, -0.52, 0.75);
     ball.castShadow = true;
     world.scene.add(r.head);
 
@@ -162,9 +165,11 @@ function updateReplicas(world, self, others) {
 
     for (let key in replicas) {
         let r = replicas[key];
-            if (r.lastUpdate < t) {
-            console.log(`Removing replica for ${key}`, r);
+        if (r.lastUpdate < t) {
+            console.log(`Removing replica for ${key}`, r);            
             world.scene.remove(r.head);
+            if (r.material !== world.defaultMaterial)
+                r.material.dispose();
             delete replicas[key];
         }
     }
