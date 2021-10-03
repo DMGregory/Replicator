@@ -1,7 +1,6 @@
 function connectToWorld(opt = {}) {
   let options = Object.assign(
     {
-      //url: 'ws://127.0.0.1:3000',
       url: 'wss://digm5520replicator.herokuapp.com',
       room: '/',
       reload_on_disconnect: false,
