@@ -32,7 +32,8 @@ function initializeWorld() {
 
     const primitiveGeo = {
       box: new THREE.BoxGeometry(),
-      ico: new THREE.IcosahedronGeometry()
+      ico: new THREE.IcosahedronGeometry(),
+      sphere: new THREE.SphereGeometry(0.5, 17, 9),
     }
 
     const material = new THREE.MeshLambertMaterial();

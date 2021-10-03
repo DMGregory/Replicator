@@ -3,16 +3,25 @@ import { XRControllerModelFactory } from "https://cdn.jsdelivr.net/npm/three@0.1
 // Establish connection to server.
 
 
-function createReplica(user, THREE) {
+const replicas = {};
+
+function createReplica(world, user) {
+    console.log(`creating replica for user ${user.id}`);
+
     const r = {
         material: new THREE.MeshLambertMaterial(user.colour)
     }
-    r.head = new THREE.Mesh(world.primitives.box, r.material);
-    r.head.scale.set(0.5, 0.2, 0.3);
+    r.head = new THREE.Mesh(world.primitiveGeo.box, r.material);
+    r.head.scale.set(0.2, 0.1, 0.12);
 
-    const ball = new THREE.Mesh(world.primitives.ico, r.material);
+    const ball = new THREE.Mesh(world.primitiveGeo.sphere, r.material);    
     r.head.add (ball);
+    ball.scale.set(1.2, 4, 2);
+    ball.position.set(0, -0.55, 0.75);
+    ball.castShadow = true;
     world.scene.add(r.head);
+
+    replicas[user.id] = r;
 
     return r;
 }
@@ -123,4 +132,42 @@ function setupLocalUser(x, y, angle, world) {
     initializeControllers(world);
 }
 
-export { setupLocalUser };
+function updateReplicas(world, self, others) {
+    const t = world.clock.getElapsedTime();
+
+    let p = new THREE.Vector3();
+    world.camera.getWorldPosition(p);
+    self.pos[0] = p.x;
+    self.pos[1] = p.y;
+    self.pos[2] = p.z;
+
+    let q = new THREE.Quaternion();
+    world.camera.getWorldQuaternion(q);
+    self.quat[0] = q.x;
+    self.quat[1] = q.y;
+    self.quat[2] = q.z;
+    self.quat[3] = q.w;
+    
+    others.forEach((o) => {
+        let r = replicas[o.id];
+
+        if (r === undefined) {
+            r = createReplica(world, o);            
+        }
+
+        r.head.position.set(o.pos[0], o.pos[1], o.pos[2]);
+        r.head.quaternion.set(o.quat[0], o.quat[1], o.quat[2], o.quat[3]);
+        r.lastUpdate = t;
+    });
+
+    for (let key in replicas) {
+        let r = replicas[key];
+            if (r.lastUpdate < t) {
+            console.log(`Removing replica for ${key}`, r);
+            world.scene.remove(r.head);
+            delete replicas[key];
+        }
+    }
+}
+
+export { setupLocalUser, updateReplicas };
