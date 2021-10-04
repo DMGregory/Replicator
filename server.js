@@ -112,7 +112,7 @@ wss.on('connection', (socket, req) => {
 			id: id,
 			pos: [0, 0, 0],
 			quat: [0, 0, 0, 1],
-			user: { rgb:[0,0,0] }
+			user: { }
 		}
 	}
 	clients[id] = client
@@ -128,6 +128,20 @@ wss.on('connection', (socket, req) => {
 			case "pose": 
 				client.shared.pos = msg.pos;
 				client.shared.quat = msg.quat;
+				if (msg.posL) {					
+					client.shared.posL = msg.posL;
+					client.shared.quatL = msg.quatL;
+				} else if (client.shared.posL) {
+					delete client.shared.posL;
+					delete client.shared.quatL;
+				}
+				if (msg.posR) {
+					client.shared.posR = msg.posR;
+					client.shared.quatR = msg.quatR;
+				} else if (client.shared.posR) {
+					delete client.shared.posR;
+					delete client.shared.quatR;
+				}
 				break;
 			case "user": 
 				client.shared.user = msg.user;

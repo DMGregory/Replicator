@@ -26,26 +26,31 @@ function initializeControllers(world) {
         this.userData.isSelecting = false;
     }
 
+    function onConnect(event) {
+        this.add(buildController(event.data));
+    }
+
+    function onRemove() {
+        let child = this.children[0];
+        if (child) {
+            this.remove(child);
+            child.geometry.dispose();
+            child.material.dispose();
+        }
+    }
+
     controller1 = world.renderer.xr.getController(0);
     controller1.addEventListener('selectstart', onSelectStart);
     controller1.addEventListener('selectend', onSelectEnd);
-    controller1.addEventListener('connected', function (event) {
-        this.add(buildController(event.data));
-    });
-    controller1.addEventListener('disconnected', function () {
-        this.remove(this.children[0]);
-    });
+    controller1.addEventListener('connected', onConnect); 
+    controller1.addEventListener('disconnected', onRemove);
     world.clientSpace.add(controller1);
 
     controller2 = world.renderer.xr.getController(1);
     controller2.addEventListener('selectstart', onSelectStart);
     controller2.addEventListener('selectend', onSelectEnd);
-    controller2.addEventListener('connected', function (event) {
-        this.add(buildController(event.data));
-    });
-    controller2.addEventListener('disconnected', function () {
-        this.remove(this.children[0]);
-    });
+    controller2.addEventListener('connected', onConnect);
+    controller2.addEventListener('disconnected', onRemove);
     world.clientSpace.add(controller2);
 
     // The XRControllerModelFactory will automatically fetch controller models
@@ -116,12 +121,7 @@ function setupLocalUser(x, y, angle, world) {
 
     initializeControllers(world);
 
-    let r = {material: new THREE.MeshLambertMaterial({color: 0xFF9900})};
-    // left
-    controller1.add(createHand(world, r, -1));
-
-    //right
-    controller2.add(createHand(world, r, 1));
+    let r = {material: new THREE.MeshLambertMaterial({color: 0xFF9900})};    
 }
 
 const replicas = {};
@@ -143,17 +143,20 @@ function createHand(world, r, side) {
     thumb.rotation.set(0, side * 0.5, 0);
     thumb.position.set(side * -0.02, 0.02, 0.08);
 
+    world.scene.add(hand);
+
     return hand;
 }
 
 function createReplica(world, user) {
-    console.log(`creating replica for user ${user.id}:`, user);
+    //console.log(`creating replica for user ${user.id}:`, user);
 
     let rgb = user.user.rgb;
     const r = {
         material: rgb ? new THREE.MeshLambertMaterial({
                 color: new THREE.Color(`rgb(${Math.round(255 * rgb[0])}, ${Math.round(255 * rgb[1])},${Math.round(255 * rgb[2])})`)
-            }) : world.defaultMaterial
+            }) : world.defaultMaterial,
+        hands: [undefined, undefined]
     }
     r.head = new THREE.Mesh(world.primitiveGeo.box, r.material);
     r.head.scale.set(0.2, 0.1, 0.12);
@@ -187,6 +190,23 @@ function createReplica(world, user) {
     return r;
 }
 
+function tryReplicateHand(world, r, index, pos, quat) {
+    let hand = r.hands[index];
+    if (pos) {           
+        if (!hand) {
+            r.hands[index] = hand = createHand(world, r, index * 2 - 1);
+        } else if (!hand.parent) {
+            world.scene.add(hand);
+        }
+
+        hand.position.set(pos[0], pos[1], pos[2]);
+        hand.quaternion.set(quat[0], quat[1], quat[2], quat[3]);
+    } else if (hand && hand.parent) {
+        world.scene.remove(hand);
+    }
+}
+
+let i = 0;
 function updateReplicas(world, self, others) {
     const t = world.clock.getElapsedTime();
 
@@ -202,11 +222,39 @@ function updateReplicas(world, self, others) {
     self.quat[1] = q.y;
     self.quat[2] = q.z;
     self.quat[3] = q.w;
-    
+
+    if (controller1.children.length > 0) {    
+        controller1.getWorldPosition(p);
+        self.posL = [p.x, p.y, p.z];
+        controller1.getWorldQuaternion(q);
+        self.quatL = [q.x, q.y, q.z, q.w];
+    } else if (self.posL) {        
+        delete self.posL;
+        delete self.quatL;
+    }
+
+    if (controller2.children.length > 0) {
+        controller2.getWorldPosition(p);
+        self.posR = [p.x, p.y, p.z];
+        controller2.getWorldQuaternion(q);
+        self.quatR = [q.x, q.y, q.z, q.w];
+    } else if (self.posR) {
+        delete self.posR;
+        delete self.quatR;
+    }
+
+
+    if (++i >= 30) {
+        i = 0;
+        //console.log(self);
+    }
+
 
     let forward = new THREE.Vector3(0, 0, -1);
 
     others.forEach((o) => {
+        if (!o.user.rgb) return;
+
         let r = replicas[o.id];
 
         if (r === undefined) {
@@ -216,22 +264,31 @@ function updateReplicas(world, self, others) {
         r.head.position.set(o.pos[0], o.pos[1], o.pos[2]);
         r.head.quaternion.set(o.quat[0], o.quat[1], o.quat[2], o.quat[3]);
 
+        tryReplicateHand(world, r, 0, o.posL, o.quatL);
+        tryReplicateHand(world, r, 1, o.posR, o.quatR);
+
+        // Position body under head.
         p.set(0, 0, -1).applyQuaternion(r.head.quaternion).setComponent(1, 0).normalize();
-        q.setFromUnitVectors(forward, p);
+        q.setFromUnitVectors(forward, p);        
 
         r.head.children[0].getWorldPosition(r.body.position);
         r.body.position.y -= 0.6;
         r.body.position.addScaledVector(p, -0.1);
         r.body.quaternion.slerp(q, 0.01);
+
+
         r.lastUpdate = t;
     });
+
 
     for (let key in replicas) {
         let r = replicas[key];
         if (r.lastUpdate < t) {
-            console.log(`Removing replica for ${key}`, r);            
+            //console.log(`Removing replica for ${key}`, r);            
             world.scene.remove(r.head);
             world.scene.remove(r.body);
+            if (r.leftHand) world.scene.remove(r.leftHand);
+            if (r.rightHand) world.scene.remove(r.rightHand);
             if (r.material !== world.defaultMaterial)
                 r.material.dispose();
             r.nameGeo.dispose();

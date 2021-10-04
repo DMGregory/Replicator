@@ -23,9 +23,11 @@ function initializeWorld() {
     document.body.appendChild(VRButton.createButton(renderer));
 
     function resize() {
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
+      if (!renderer.xr.isPresenting) {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+      }
     }
     resize();
     window.addEventListener('resize', resize, false);

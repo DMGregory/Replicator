@@ -78,15 +78,29 @@ function connectToWorld(opt = {}) {
 
   server = connect(world);
 
+  let i = 0;
   setInterval(() => {
     if (server && server.readyState == 1 && world.self.id) {
-      server.send(
-        JSON.stringify({
-          cmd: 'pose',
-          pos: world.self.pos,
-          quat: world.self.quat,
-        })
-      );
+      const message = {
+        cmd: 'pose',
+        pos: world.self.pos,
+        quat: world.self.quat,
+      };
+      if (world.self.posL) {        
+        message.posL = world.self.posL;
+        message.quatL = world.self.quatL;
+      }
+      if (world.self.posR) {
+        message.posR = world.self.posR;
+        message.quatR = world.self.quatR;
+      }
+      
+      if (++i >= 30) {
+        i = 0;
+        //console.log(world.self);
+      }
+
+      server.send(JSON.stringify(message));
     }
   }, 1000 / 30);
 
