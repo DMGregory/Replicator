@@ -169,7 +169,7 @@ function createReplica(world, user) {
     world.scene.add(r.head);
 
     r.body = new THREE.Mesh(world.primitiveGeo.box, r.material);
-    r.body.scale.set(0.4, 0.65, 0.15);
+    r.body.scale.set(0.35, 0.65, 0.12);
     r.body.castShadow = true;
     world.scene.add(r.body);
 
@@ -201,7 +201,7 @@ function tryReplicateHand(world, r, index, pos, quat) {
 
         hand.position.set(pos[0], pos[1], pos[2]);
         hand.quaternion.set(quat[0], quat[1], quat[2], quat[3]);
-    } else if (hand && hand.parent) {
+    } else if (hand && hand.parent) {        
         world.scene.remove(hand);
     }
 }
@@ -287,8 +287,10 @@ function updateReplicas(world, self, others) {
             //console.log(`Removing replica for ${key}`, r);            
             world.scene.remove(r.head);
             world.scene.remove(r.body);
-            if (r.leftHand) world.scene.remove(r.leftHand);
-            if (r.rightHand) world.scene.remove(r.rightHand);
+            for (let i = 0; i < 2; i++) {
+                if (r.hands[i] && r.hands[i].parent)
+                    world.scene.remove(r.hands[i]);
+            }
             if (r.material !== world.defaultMaterial)
                 r.material.dispose();
             r.nameGeo.dispose();
