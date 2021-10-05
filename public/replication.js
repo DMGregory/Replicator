@@ -154,7 +154,7 @@ function createReplica(world, user) {
     let rgb = user.user.rgb;
     const r = {
         material: rgb ? new THREE.MeshLambertMaterial({
-                color: new THREE.Color(`rgb(${Math.round(255 * rgb[0])}, ${Math.round(255 * rgb[1])},${Math.round(255 * rgb[2])})`)
+                color: new THREE.Color(rgb), //new THREE.Color(`rgb(${Math.round(255 * rgb[0])}, ${Math.round(255 * rgb[1])},${Math.round(255 * rgb[2])})`)
             }) : world.defaultMaterial,
         hands: [undefined, undefined]
     }
@@ -175,7 +175,7 @@ function createReplica(world, user) {
 
     replicas[user.id] = r;
 
-    r.nameGeo = new THREE.TextGeometry(user.id, {font:font, size: 0.3, height: 0});
+    r.nameGeo = new THREE.TextGeometry(user.user.name, {font:font, size: 0.3, height: 0});
     r.nameGeo.computeBoundingBox();
     const name = new THREE.Mesh(r.nameGeo, textMaterial);
 

@@ -4,7 +4,8 @@ function connectToWorld(opt = {}) {
       url: 'wss://digm5520replicator.herokuapp.com',
       room: '/',
       reload_on_disconnect: false,
-
+      userName: "Anonymous",
+      userColour: 0x6495ED,
       log: console.log,
     },
     opt
@@ -18,11 +19,14 @@ function connectToWorld(opt = {}) {
       pos: [0, 0, 0],
       quat: [0, 0, 0, 1],
       user: {
-        rgb: [Math.random(), Math.random(), Math.random()],
+        name: options.userName,
+        rgb: options.userColour,
       },
     },
     others: [],
   };
+
+  console.log(world);
 
   function connect(world) {
     options.log(`connecting to ${options.url}${options.room}`);

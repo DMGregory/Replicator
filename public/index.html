@@ -14,6 +14,12 @@
     <!-- <link rel="stylesheet" type="text/css" href="styles.css"> -->
   </head>
   <body>
+    <form id="login">
+      <input name="username" value="Anonymous"/>
+      <input name="colour" value="6495ED"/>      
+    </form>
+    <button id="joinButton">Join</button>
+
     <script src="utility.js"></script>
     <script src="connect.js"></script>
     <script type="module">
@@ -24,99 +30,119 @@
       import { initializeWorld } from "/world.js"; 
       import { setupLocalUser, updateReplicas } from "/replication.js"; 
 
-      // Prep a DOM element to display debug messages.
-      const readout = document.createElement('div');
-      readout.style.position = 'absolute';
-      readout.style.top = '0px';
-      document.body.appendChild(readout);
 
-      // Setup a basic THREE.js scene with camera, floor, etc.
-      const world = initializeWorld();      
+      const form = document.getElementById('login');  
+      form.elements[1].value = randomColourHex();    
+      document.getElementById('joinButton').onclick = logIn;
 
-      // Connect to server.
-      const app = connectToWorld({
-        url: window.location.href.startsWith('http://localhost') ? 
-        'ws://127.0.0.1:3000' :
-        'wss://digm5520replicator.herokuapp.com',
-      });
-
-
-      // Place our user into this scene.
-      // TODO: Get spawn position / facing angle from server.
-      let angle = Math.random() * Math.PI * 2;
-      setupLocalUser(Math.sin(angle) * 3, Math.cos(angle) * 3, angle, world);
-
-      // Set up mouse/keyboard controls.
-      const controls = new OrbitControls(world.camera, world.renderer.domElement);
-      controls.target.set(0, 0.75, 0);
-
-      // Set up raycasting for mouse/gaze picking.
-      const raycaster = new THREE.Raycaster();
-      const mouse = new THREE.Vector2();    
-
-      function onMouseMove(event) {
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      function randomColourHex() {
+        const maxVal = 0xFFFFFF;
+        const randomNumber = Math.random() * maxVal;         
+        return Math.floor(randomNumber).toString(16);
       }
-      world.renderer.domElement.onmousemove = onMouseMove;
-
-      let gazeObject = null;
 
 
-      
-      // Fill scene with some basic demo content.
-      const cube = new THREE.Mesh(world.primitiveGeo.box, world.defaultMaterial);      
-      cube.position.set(0, 1.5, 0);
-      cube.castShadow = true;
-      world.scene.add(cube);
-
-      const ico = new THREE.Mesh(world.primitiveGeo.ico,
-        new THREE.MeshLambertMaterial({ color: 0xff0000 })
-      );
-      ico.scale.set(0.1, 0.1, 0.1);
-      ico.position.z = -1;
-      world.scene.add(ico);
-
-
-      function animate() {
-        const dt = world.clock.getDelta();
-        const t = world.clock.getElapsedTime();
-
-        if (world.renderer.xr && world.renderer.xr.isPresenting) {
-          mouse.set(0, 0);
-        } else {
-          controls.update(dt);
-        }
-
-        raycaster.setFromCamera(mouse, world.camera);
-        const intersects = raycaster.intersectObjects([cube, world.floor]);
-
-        let newGaze = null;
-        if (intersects.length > 0) {
-          ico.position.copy(intersects[0].point);
-          newGaze = intersects[0].object;
-        }
-        if (newGaze) gazeObject = newGaze;
-
-        // update the scene:
-        cube.rotation.x += 0.01;
-        cube.rotation.y += 0.01;
-
-        ico.rotation.x -= 0.01;
-        ico.rotation.y -= 0.01;
-
-        let { self, others } = app.world;
-
-        updateReplicas(world, self, others);
+      function logIn() {
         
 
-        // draw the scene:
-        world.renderer.render(world.scene, world.camera);
+        // Prep a DOM element to display debug messages.
+        const readout = document.createElement('div');
+        readout.style.position = 'absolute';
+        readout.style.top = '0px';
+        document.body.appendChild(readout);
 
-        showReadout(readout);
+        // Setup a basic THREE.js scene with camera, floor, etc.
+        const world = initializeWorld();      
+
+        // Connect to server.
+        const app = connectToWorld({
+          url: window.location.href.startsWith('http://localhost') ? 
+          'ws://127.0.0.1:3000' :
+          'wss://digm5520replicator.herokuapp.com',
+          userName: form.elements[0].value,
+          userColour: parseInt(form.elements[1].value, 16)
+        });
+
+        form.remove();
+        document.getElementById('joinButton').remove();
+
+        // Place our user into this scene.
+        // TODO: Get spawn position / facing angle from server.
+        let angle = Math.random() * Math.PI * 2;
+        setupLocalUser(Math.sin(angle) * 3, Math.cos(angle) * 3, angle, world);
+
+        // Set up mouse/keyboard controls.
+        const controls = new OrbitControls(world.camera, world.renderer.domElement);
+        controls.target.set(0, 0.75, 0);
+
+        // Set up raycasting for mouse/gaze picking.
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();    
+
+        function onMouseMove(event) {
+          mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+          mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        }
+        world.renderer.domElement.onmousemove = onMouseMove;
+
+        let gazeObject = null;
+
+
+        
+        // Fill scene with some basic demo content.
+        const cube = new THREE.Mesh(world.primitiveGeo.box, world.defaultMaterial);      
+        cube.position.set(0, 1.5, 0);
+        cube.castShadow = true;
+        world.scene.add(cube);
+
+        const ico = new THREE.Mesh(world.primitiveGeo.ico,
+          new THREE.MeshLambertMaterial({ color: 0xff0000 })
+        );
+        ico.scale.set(0.1, 0.1, 0.1);
+        ico.position.z = -1;
+        world.scene.add(ico);
+
+
+        function animate() {
+          const dt = world.clock.getDelta();
+          const t = world.clock.getElapsedTime();
+
+          if (world.renderer.xr && world.renderer.xr.isPresenting) {
+            mouse.set(0, 0);
+          } else {
+            controls.update(dt);
+          }
+
+          raycaster.setFromCamera(mouse, world.camera);
+          const intersects = raycaster.intersectObjects([cube, world.floor]);
+
+          let newGaze = null;
+          if (intersects.length > 0) {
+            ico.position.copy(intersects[0].point);
+            newGaze = intersects[0].object;
+          }
+          if (newGaze) gazeObject = newGaze;
+
+          // update the scene:
+          cube.rotation.x += 0.01;
+          cube.rotation.y += 0.01;
+
+          ico.rotation.x -= 0.01;
+          ico.rotation.y -= 0.01;
+
+          let { self, others } = app.world;
+
+          updateReplicas(world, self, others);
+          
+
+          // draw the scene:
+          world.renderer.render(world.scene, world.camera);
+
+          showReadout(readout);
+        }
+        // start!
+        world.renderer.setAnimationLoop(animate);
       }
-      // start!
-      world.renderer.setAnimationLoop(animate);
     </script>
   </body>
 </html>
