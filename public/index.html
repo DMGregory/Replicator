@@ -35,6 +35,18 @@
       form.elements[1].value = randomColourHex();    
       document.getElementById('joinButton').onclick = logIn;
 
+      let localStorageAvailable = false;
+      try {
+        let storage = window.localStorage;
+        let name = storage.getItem('userName');
+        if (name) form.elements[0].value = name;
+
+        let colour = storage.getItem('userColour');
+        if (colour) form.elements[1].value = colour;
+
+        localStorageAvailable = true;
+      } finally {}
+
       function randomColourHex() {
         const maxVal = 0xFFFFFF;
         const randomNumber = Math.random() * maxVal;         
@@ -54,14 +66,26 @@
         // Setup a basic THREE.js scene with camera, floor, etc.
         const world = initializeWorld();      
 
+        let colour = parseInt(form.elements[1].value, 16);
+        if (isNaN(colour)) { 
+          form.elements[1].value = randomColourHex();
+          colour = parseInt(form.elements[1].value, 16);
+        }
+
         // Connect to server.
         const app = connectToWorld({
           url: window.location.href.startsWith('http://localhost') ? 
           'ws://127.0.0.1:3000' :
           'wss://digm5520replicator.herokuapp.com',
           userName: form.elements[0].value,
-          userColour: parseInt(form.elements[1].value, 16)
+          userColour: colour
         });
+
+        if (localStorageAvailable) {
+          let storage = window.localStorage;
+          storage.setItem('userName', form.elements[0].value);
+          storage.setItem('userColour', form.elements[1].value);
+        }
 
         form.remove();
         document.getElementById('joinButton').remove();
