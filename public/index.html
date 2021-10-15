@@ -6,16 +6,14 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="icon" href="/favicon.ico">
     <link rel="manifest" href="/site.webmanifest">
-    <style>
-      * {
-        margin: 0;
-      }
-    </style>
-    <!-- <link rel="stylesheet" type="text/css" href="styles.css"> -->
+    <link rel="stylesheet" type="text/css" href="styles.css">
   </head>
   <body>
     <form id="login">
+      <label for="userName">Display Name: </label>
       <input name="username" value="Anonymous"/>
+      &emsp;
+      <label for="colour">Display Colour (Hex): </label>
       <input name="colour" value="6495ED"/>      
     </form>
     <button id="joinButton">Join</button>
@@ -24,17 +22,19 @@
     <script src="connect.js"></script>
     <script type="module">
       'use strict';
-
+      
       import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';      
       import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/controls/OrbitControls.js';      
       import { initializeWorld } from "/world.js"; 
       import { setupLocalUser, updateReplicas } from "/replication.js"; 
 
-
-      const form = document.getElementById('login');  
+      // Setup login form. Randomize the colour value for variety.
+      let form = document.getElementById('login');  
       form.elements[1].value = randomColourHex();    
       document.getElementById('joinButton').onclick = logIn;
 
+      // Attempt to retrieve user name and preferences stored on the last successful login.
+      // If available, use these values to overwrite the form defaults.
       let localStorageAvailable = false;
       try {
         let storage = window.localStorage;
@@ -47,15 +47,8 @@
         localStorageAvailable = true;
       } finally {}
 
-      function randomColourHex() {
-        const maxVal = 0xFFFFFF;
-        const randomNumber = Math.random() * maxVal;         
-        return Math.floor(randomNumber).toString(16);
-      }
-
-
-      function logIn() {
-        
+      // Enter our 3D scene and initiate server communication once user has picked their name and signed in.
+      function logIn() {       
 
         // Prep a DOM element to display debug messages.
         const readout = document.createElement('div');
@@ -66,13 +59,14 @@
         // Setup a basic THREE.js scene with camera, floor, etc.
         const world = initializeWorld();      
 
+        // Get our display colour from the login form.
         let colour = parseInt(form.elements[1].value, 16);
         if (isNaN(colour)) { 
           form.elements[1].value = randomColourHex();
           colour = parseInt(form.elements[1].value, 16);
         }
 
-        // Connect to server.
+        // Connect to server. Use local URL for testing, secure URL for online.
         const app = connectToWorld({
           url: window.location.href.startsWith('http://localhost') ? 
           'ws://127.0.0.1:3000' :
@@ -81,21 +75,28 @@
           userColour: colour
         });
 
+        // If we ge this far, save this user name and colour for next log-in too.
         if (localStorageAvailable) {
           let storage = window.localStorage;
           storage.setItem('userName', form.elements[0].value);
           storage.setItem('userColour', form.elements[1].value);
         }
 
+        // We're done with the login form now, and can safely remove it.
         form.remove();
+        form = undefined;
         document.getElementById('joinButton').remove();
 
         // Place our user into this scene.
-        // TODO: Get spawn position / facing angle from server.
+        // TODO: Get spawn position / facing angle from server
+        // so we don't overlap users already in the room, or end up facing away from everyone.
+        // For now, we'll just pick a random angle around a circle facing inward, and hope.
         let angle = Math.random() * Math.PI * 2;
         setupLocalUser(Math.sin(angle) * 3, Math.cos(angle) * 3, angle, world);
 
         // Set up mouse/keyboard controls.
+        // TODO: our "clientSpace" local coordinate system breaks Orbit controls.
+        // Replace them with the WASD / teleport controls other students are working on.
         const controls = new OrbitControls(world.camera, world.renderer.domElement);
         controls.target.set(0, 0.75, 0);
 
@@ -103,12 +104,16 @@
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();    
 
+        // Track mouse movements for mouse picking in non-VR.
         function onMouseMove(event) {
+          // Normalize coordinates from -1 on the bottom/left to +1 at the top/right,
+          // with (0, 0) in the center of the canvas.
           mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
           mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         }
         world.renderer.domElement.onmousemove = onMouseMove;
 
+        // Keep track of the last looked-at object - for future use.
         let gazeObject = null;
 
 
@@ -119,6 +124,7 @@
         cube.castShadow = true;
         world.scene.add(cube);
 
+        // Create pointer object that follows mouse/gaze.
         const ico = new THREE.Mesh(world.primitiveGeo.ico,
           new THREE.MeshLambertMaterial({ color: 0xff0000 })
         );
@@ -127,16 +133,21 @@
         world.scene.add(ico);
 
 
+        // Main rendering loop.
         function animate() {
           const dt = world.clock.getDelta();
           const t = world.clock.getElapsedTime();
-
+          
           if (world.renderer.xr && world.renderer.xr.isPresenting) {
+            // In VR, we want our gaze ray to always go through the center of the view.
+            // (At least until headsets give us eye tracking...)
             mouse.set(0, 0);
           } else {
+            // In non-VR, let the orbit controls do their work.
             controls.update(dt);
           }
 
+          // Figure out what we're looking at and move our gaze marker icosahedron there.
           raycaster.setFromCamera(mouse, world.camera);
           const intersects = raycaster.intersectObjects([cube, world.floor]);
 
@@ -145,6 +156,7 @@
             ico.position.copy(intersects[0].point);
             newGaze = intersects[0].object;
           }
+          // TODO: handle gaze enter / exit events when the gaze target changes.
           if (newGaze) gazeObject = newGaze;
 
           // update the scene:
@@ -154,17 +166,18 @@
           ico.rotation.x -= 0.01;
           ico.rotation.y -= 0.01;
 
+          // Get the data objects that sync to/from the server.
           let { self, others } = app.world;
-
+          // Update our data into the self object, and update avatars for remote users from the others object.
           updateReplicas(world, self, others);
           
-
           // draw the scene:
           world.renderer.render(world.scene, world.camera);
 
           showReadout(readout);
         }
-        // start!
+
+        // Start animating!
         world.renderer.setAnimationLoop(animate);
       }
     </script>
