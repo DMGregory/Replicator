@@ -16,6 +16,7 @@
   - This file, index.html, responsible for the login form, and calling into the other modules to set up the world/scene/connection, and running the rendering loop.
   - world.js, which encapsulates the work of creating an almost-blank-slate THREE.js space with a floor and lighting, and a button to enter VR.
   - connect.js, which handles connecting to a Heroku server (running server.js) and synchonizing user data over that connection.
+  - server.js, which handles running the Heroku server, serving the other files and assets to the web browser, and acting as a relay to share data over WebSocket.
   - replication.js, which is responsible for tracking and displaying the local user's controllers, saving that information into the data structure connect.js synchronizes,
     and creating/updating avatars for remote users based on the latest data synched using connect.js.
 
