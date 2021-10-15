@@ -1,9 +1,28 @@
-// Responsible for reading poses received from the server,
-// creating and animating matching avatars for remote users,
-// and sharing this user's pose with the server.
+/*
+  Douglas Gregory - 219033117
 
-// This also handles rendering the local client's controllers for them to see.
-// TODO: That's a distinct responsibility that should be separated.
+  See public/index.html for overview of whole solution.
+  This code is responsible for reading poses received from the server,
+  creating and animating matching avatars for remote users,
+  and sharing this user's pose with the server.
+
+  This also handles rendering the local client's controllers for them to see.
+  TODO: That's probably a distinct responsibility that should be separated.
+
+  To use: import as a module using
+  import { setupLocalUser, updateReplicas } from "/replication.js"; 
+
+  call setupLocalUser(1, 2, Math.PI, world) to establish the user's local coordinate space centered at (1, 0, 2), 
+  facing "South", in the THREE.js world data structure produced by world.js.
+
+  Inside your animate loop, call updateReplicas(world, self, others),
+  passing it the world data structure from world.js again,
+  and the "self" (data to sync to server about me) and "others" (data synched from the server about other users)
+  data structures from connect.js's "world" object. 
+  
+  This will populate the self structure with the data about the local user's HMD and controller poses (where applicable),
+  and create/update visible avatars representing all other users in the room according to the latest server info.
+*/
 
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
 import { XRControllerModelFactory } from "https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/webxr/XRControllerModelFactory.min.js"; 
@@ -25,13 +44,13 @@ const replicas = {};
 // portion of the user's physical environment mapped into the VR space, and can be
 // moved/rotated to teleport around the virtual scene.
 
-// Accepts an x and y position in the world, and an angle in radians for the default facing direction
+// Accepts an x and z position in the world, and an angle in radians for the default facing direction
 // so that we can set the initial positions/orientations of users to not overlap each other.
 // Also accepts a "world" object (see world.js) with core components of the THREE.js scene.
-function setupLocalUser(x, y, angle, world) {
+function setupLocalUser(x, z, angle, world) {
     const clientSpace = new THREE.Group();
     clientSpace.position.x = x;
-    clientSpace.position.z = y;
+    clientSpace.position.z = z;
     clientSpace.rotation.y = angle;    
   
     // Place the user's camera (head) into this space so it moves with them

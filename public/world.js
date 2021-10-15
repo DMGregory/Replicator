@@ -1,18 +1,32 @@
+/*
+  Douglas Gregory - 219033117
+
+  See public/index.html for overview of whole solution.
+  This code is responsible for the boilerplate of setting up a basic THREE.js scene,
+  and bundling the objects we most often want to re-use into a convenient "world" data structure to pass around.
+
+  To use: 
+  import { initializeWorld } from "/world.js"; 
+
+  const world = initializeWorld();
+
+  This returns an object containing...
+  - clock
+  - renderer
+  - scene
+  - camera
+  - floor           (ground plane we can use for raycasts so they don't continue to infinity)
+  - defaultMaterial (basic grey lambert material for background objects)
+  - primitiveGeo: {box, ico, sphere}
+    (THREE.BufferGeometry objects for primitives we re-use a lot, so we don't need everyone allocating their own)
+*/
+
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.126.0/build/three.module.js';
 import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.126.0/examples/jsm/webxr/VRButton.js';
 
-/*
-Bundles up the boilerplate of setting up a THREE.js scene for VR,
-and packs up the items we want to use most often into a "world" object, containing...
-- clock
-- renderer
-- scene
-- camera
-- floor           (ground plane we can use for raycasts)
-- defaultMaterial (basic grey lambert material for background objects)
-- primitiveGeo: {box, ico, sphere}
-  (THREE.BufferGeometry objects for primitives we re-use a lot, so we don't need everyone allocating their own)
-*/
+
+// Bundles up the boilerplate of setting up a THREE.js scene for VR,
+// and packs up the items we want to use most often into a "world" object - see detailed breakdown above.
 function initializeWorld() {
     // Set up basic rendering features.
     const clock = new THREE.Clock();

@@ -1,7 +1,9 @@
-/* 
-Basic utility functions to help with printing logs to a div, 
-for data that's too spammy to log to the console.
-Mostly used during debugging.
+/*
+  Douglas Gregory - 219033117
+
+  See public/index.html for overview of whole solution.
+  These snippets are just small utility functions to help with printing data to a div for debugging,
+  or generating a random colour hex string for the login form.
 */
 
 function vectorToString(v) {

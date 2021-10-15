@@ -1,10 +1,32 @@
-//
 /*
-Establishes a connection to the WebSocket server, and returns a pair {world, server}
+  Douglas Gregory - 219033117
+
+  See index.html for overview of whole solution.
+  This code is responsible for establishing a connection to the Heroku server over WebSocket,
+  and maintaining a data structure of data to send to the server / data received from the server.
+  
+
+  This file is only slightly modified from Graham Wakefield's https://github.com/worldmaking/nodelab/blob/main/public/connect.js
+
+  The main changes were adding replicated fields for a user's controller poses and display name,
+  and updating the message format to use pure JSON, rather than a string command followed by a JSON body.
+
+  I've also added comments to document my understanding of the code.
+
+
+  To use: call connectToWorld() from the client app to initiate a connection.
+  This function returns a {world, server} pair with the server-synchronized data, and a reference to the WebSocket connection.
+
+  Put the latest data to send into world.self, and read the latest data to display out of world.others.
+*/
+
+
+/*
+This function establishes a connection to the WebSocket server, and returns a pair {world, server}
 
 world contains:
- - a self object, with the data about the local client to sync to the server periodically,
- - an others array, containing a list of other users' states received from the server periodically.
+ - a "self" object, with the data about the local client to sync to the server periodically,
+ - an "others" array, containing a list of other users' states received from the server periodically.
 
 server is a reference to the WebSocket connection.
 

@@ -1,3 +1,28 @@
+<!--
+  Douglas Gregory - 219033117
+
+  This web app demonstrates a proof of concept for network replication, showing...
+  - Hosting a web app from a publicly accessible URL https://digm5520replicator.herokuapp.com/ 
+  - Presenting the user with a sign-in interface to set their display name and appearance (colour hex code)
+  - Transitioning the user to a THREE.js scene with the option to enter VR
+  - Detecting VR controllers and rendering them with matching 3D models (based on the example at https://github.com/mrdoob/three.js/blob/master/examples/webxr_vr_ballshooter.html)
+  - Establishing a connection to a WebSocket server (courtesy of Graham Wakefield's connect.js and server.js code for nodemon)
+  - Synchronizing the local user's camera/HMD pose to the server, along with controller poses if available
+  - Replicating remote users' pose data synchronized from the server, and visualizing them with custom-named and -coloured avatars
+  - Handling removal of an avatar when its user is disconnected
+  - Remembering user preferences between visits to the app, using local storage
+
+  It consists of 5 main parts:
+  - This file, index.html, responsible for the login form, and calling into the other modules to set up the world/scene/connection, and running the rendering loop.
+  - world.js, which encapsulates the work of creating an almost-blank-slate THREE.js space with a floor and lighting, and a button to enter VR.
+  - connect.js, which handles connecting to a Heroku server (running server.js) and synchonizing user data over that connection.
+  - replication.js, which is responsible for tracking and displaying the local user's controllers, saving that information into the data structure connect.js synchronizes,
+    and creating/updating avatars for remote users based on the latest data synched using connect.js.
+
+  With this basic flow proven out, I'm able to work on porting this into a "replication" branch of nodelab, so that we can incorporate
+  simultaneous presence of multiple users in one VR space into our collaborative app.
+-->
+
 <html>
   <head>
     <meta charset="UTF-8" />

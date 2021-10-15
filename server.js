@@ -1,6 +1,27 @@
-// Cloned from https://github.com/worldmaking/nodelab/blob/main/server.js with modifications:
-// - Converted messages to full JSON format, rather than string command followed by JSON body.
-// - Added handling for replicating left & right controller poses.
+/*
+  Douglas Gregory - 219033117
+
+  See public/index.html for overview of whole solution.
+  This code is responsible for running the Heroku server, serving the public html/js/css/asset files, 
+  and operating a WebSocket connection to relay user data and poses to all connected clients, in one of potentially many "rooms".
+
+
+  This file is only slightly modified from Graham Wakefield's https://github.com/worldmaking/nodelab/blob/main/public/connect.js
+
+  The main changes were adding replicated fields for a user's controller poses and display name,
+  and updating the message format to use pure JSON, rather than a string command followed by a JSON body.
+
+  Small changes made to the handling of room names, due to a bug in handling an empty/invalid room name 
+  (getRoom would return a valid room named "default", but the room variable would still hold the old name, causing the client to not be removed properly on exit)
+
+  I've also added comments to document my understanding of the code.
+
+
+  To use: to test locally, use the command "node server.js" or "nodemon server.js" from the command line, then point a browser at localhost:3000
+  Or push this repository to a Heroku server to run it live online.
+
+  Use connect.js's connectToWorld() function to establish a connection from the client web page to this server.
+*/
 
 /*
 A simple server to manage user connections within different "rooms"
